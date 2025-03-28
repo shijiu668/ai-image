@@ -35,7 +35,20 @@ export default function Home() {
 
       setImageUrl(data.data[0].url);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : '图片生成失败，请稍后重试';
+      let errorMessage = '图片生成失败，请稍后重试';
+      try {
+        const errorResponse = await err.response?.json();
+        if (errorResponse?.error) {
+          errorMessage = errorResponse.error;
+          if (errorResponse.details) {
+            errorMessage += `\n详细信息：${JSON.stringify(errorResponse.details, null, 2)}`;
+          }
+        } else if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+      } catch (_) {
+        // 如果解析响应失败，使用默认错误信息
+      }
       setError(errorMessage);
     } finally {
       setLoading(false);
