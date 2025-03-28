@@ -15,6 +15,12 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/private/images/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'dalleprodsec.blob.core.windows.net',
+        port: '',
+        pathname: '/private/images/**',
+      },
     ],
   },
 };

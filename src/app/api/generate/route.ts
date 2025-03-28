@@ -35,11 +35,30 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('图片生成错误:', error);
     let errorMessage = '图片生成失败，请稍后重试';
+    let errorDetails = null;
+
     if (error instanceof Error) {
       errorMessage = error.message;
+      errorDetails = {
+        name: error.name,
+        stack: error.stack,
+        cause: error.cause
+      };
     }
+
+    // 记录详细的错误信息
+    console.error('详细错误信息:', {
+      message: errorMessage,
+      details: errorDetails,
+      originalError: error
+    });
+
     return NextResponse.json(
-      { error: errorMessage },
+      { 
+        error: errorMessage,
+        details: errorDetails,
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }

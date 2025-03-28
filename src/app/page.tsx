@@ -35,7 +35,8 @@ export default function Home() {
 
       setImageUrl(data.data[0].url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '图片生成失败，请稍后重试');
+      const errorMessage = err instanceof Error ? err.message : '图片生成失败，请稍后重试';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
