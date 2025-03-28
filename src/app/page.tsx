@@ -14,6 +14,7 @@ export default function Home() {
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [requestId, setRequestId] = useState('');
 
   const generateImage = async () => {
     const MAX_RETRIES = 2;
@@ -28,13 +29,60 @@ export default function Home() {
         setLoading(true);
         setError('');
         
+        const currentRequestId = Math.random().toString(36).substring(7);
+        setRequestId(currentRequestId);
+        
         response = await fetch('/api/generate', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({ prompt, requestId: currentRequestId }),
         });
+
+        // 如果返回202状态码，说明请求正在处理中，需要轮询检查状态
+        if (response.status === 202) {
+          const pollInterval = setInterval(async () => {
+            try {
+              const pollResponse = await fetch('/api/generate', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ requestId: currentRequestId }),
+              });
+
+              if (pollResponse.status === 202) {
+                // 请求仍在处理中，继续等待
+                return;
+              }
+
+              clearInterval(pollInterval);
+              
+              const pollData = await pollResponse.json();
+              if (!pollResponse.ok) {
+                throw new Error(pollData.error || '图片生成失败');
+              }
+              
+              setImageUrl(pollData.data[0].url);
+              setLoading(false);
+            } catch (pollError) {
+              clearInterval(pollInterval);
+              throw pollError;
+            }
+          }, 2000); // 每2秒检查一次状态
+          
+          // 设置最大轮询时间为3分钟
+          setTimeout(() => {
+            clearInterval(pollInterval);
+            if (loading) {
+              setError('请求超时，请重试');
+              setLoading(false);
+            }
+          }, 180000);
+          
+          return;
+        }
     
         const data = await response.json();
     
