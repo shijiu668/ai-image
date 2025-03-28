@@ -24,11 +24,22 @@ export async function POST(req: Request) {
       size: '1024x1024',
     });
 
-    return NextResponse.json(response);
+    if (!response || !response.data || !Array.isArray(response.data)) {
+      throw new Error('无效的API响应格式');
+    }
+
+    return NextResponse.json({
+      data: response.data,
+      created: response.created
+    });
   } catch (error) {
     console.error('图片生成错误:', error);
+    let errorMessage = '图片生成失败，请稍后重试';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
     return NextResponse.json(
-      { error: '图片生成失败，请稍后重试' },
+      { error: errorMessage },
       { status: 500 }
     );
   }
