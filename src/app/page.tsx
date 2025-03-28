@@ -36,11 +36,20 @@ export default function Home() {
       setImageUrl(data.data[0].url);
     } catch (err) {
       let errorMessage = '图片生成失败，请稍后重试';
+      interface ErrorResponse {
+        response?: {
+          json(): Promise<{
+            error?: string;
+            details?: unknown;
+          }>;
+        };
+      }
+
       if (err instanceof Error) {
         errorMessage = err.message;
       } else if (typeof err === 'object' && err !== null && 'response' in err) {
         try {
-          const errorResponse = await (err as any).response?.json();
+          const errorResponse = await (err as ErrorResponse).response?.json();
           if (errorResponse?.error) {
             errorMessage = errorResponse.error;
             if (errorResponse.details) {
