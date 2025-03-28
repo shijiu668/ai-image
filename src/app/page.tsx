@@ -15,7 +15,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const generateImage = async (event?: React.MouseEvent<HTMLButtonElement>) => {
+  const generateImage = async () => {
     const MAX_RETRIES = 2;
     const handleGenerate = async (retryCount = 0) => {
       if (!prompt) {
@@ -73,6 +73,8 @@ export default function Home() {
         setLoading(false);
       }
     };
+    
+    handleGenerate();
   };
 
   return (
