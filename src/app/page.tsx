@@ -3,67 +3,76 @@
 import { useState } from 'react';
 import Image from 'next/image';
 
+interface ErrorResponse {
+  error?: string;
+  details?: unknown;
+  timestamp?: string;
+}
+
 export default function Home() {
   const [prompt, setPrompt] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const generateImage = async () => {
-    if (!prompt) {
-      setError('请输入图片描述');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError('');
-      
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || '图片生成失败');
+  const generateImage = async (event?: React.MouseEvent<HTMLButtonElement>) => {
+    const MAX_RETRIES = 2;
+    const handleGenerate = async (retryCount = 0) => {
+      if (!prompt) {
+        setError('请输入图片描述');
+        return;
       }
 
-      setImageUrl(data.data[0].url);
-    } catch (err) {
-      let errorMessage = '图片生成失败，请稍后重试';
-      interface ErrorResponse {
-        response?: {
-          json(): Promise<{
-            error?: string;
-            details?: unknown;
-          }>;
-        };
-      }
-
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      } else if (typeof err === 'object' && err !== null && 'response' in err) {
-        try {
-          const errorResponse = await (err as ErrorResponse).response?.json();
-          if (errorResponse?.error) {
-            errorMessage = errorResponse.error;
-            if (errorResponse.details) {
-              errorMessage += `\n详细信息：${JSON.stringify(errorResponse.details, null, 2)}`;
-            }
-          }
-        } catch {
-          // 如果解析响应失败，使用默认错误信息
+      let response;
+      try {
+        setLoading(true);
+        setError('');
+        
+        response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ prompt }),
+        });
+    
+        const data = await response.json();
+    
+        if (!response.ok) {
+          throw new Error(data.error || '图片生成失败');
         }
+    
+        setImageUrl(data.data[0].url);
+      } catch (err) {
+        let errorMessage = '图片生成失败，请稍后重试';
+        
+        // 如果是超时错误且未超过最大重试次数，则进行重试
+        if (err instanceof Error && err.message.includes('超时') && retryCount < MAX_RETRIES) {
+          console.log(`请求超时，正在进行第${retryCount + 1}次重试...`);
+          return handleGenerate(retryCount + 1);
+        }
+        
+        if (err instanceof Error) {
+          errorMessage = err.message;
+        } else if (typeof err === 'object' && err !== null && response) {
+          try {
+            const data = await response.json();
+            const errorData = data as ErrorResponse;
+            if (errorData.error) {
+              errorMessage = errorData.error;
+              if (errorData.details) {
+                errorMessage += `\n详细信息：${JSON.stringify(errorData.details, null, 2)}`;
+              }
+            }
+          } catch {
+            // 如果解析响应失败，使用默认错误信息
+          }
+        }
+        setError(errorMessage);
+      } finally {
+        setLoading(false);
       }
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
+    };
   };
 
   return (
