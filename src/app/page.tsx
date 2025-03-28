@@ -46,7 +46,7 @@ export default function Home() {
         } else if (err instanceof Error) {
           errorMessage = err.message;
         }
-      } catch (_error) {
+      } catch {
         // 如果解析响应失败，使用默认错误信息
       }
       setError(errorMessage);
