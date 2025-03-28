@@ -14,7 +14,6 @@ export default function Home() {
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [requestId, setRequestId] = useState('');
 
   const generateImage = async () => {
     const MAX_RETRIES = 2;
@@ -30,7 +29,6 @@ export default function Home() {
         setError('');
         
         const currentRequestId = Math.random().toString(36).substring(7);
-        setRequestId(currentRequestId);
         
         response = await fetch('/api/generate', {
           method: 'POST',
